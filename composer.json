@@ -1,0 +1,73 @@
+{
+    "name": "crm/symfony-backend",
+    "type": "project",
+    "description": "CRM Symfony backend with GraphQL",
+    "keywords": ["symfony", "graphql", "crm"],
+    "license": "MIT",
+    "version": "1.0.0",
+    "require": {
+        "php": ">=8.2",
+        "ext-ctype": "*",
+        "ext-iconv": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "ext-pdo_pgsql": "*",
+        "webonyx/graphql-php": "^14.0",
+        "symfony/apache-pack": "*",
+        "symfony/asset": "6.4.*",
+        "symfony/console": "6.4.*",
+        "symfony/dotenv": "6.4.*",
+        "symfony/expression-language": "6.4.*",
+        "symfony/flex": "^2",
+        "symfony/form": "6.4.*",
+        "symfony/framework-bundle": "6.4.*",
+        "symfony/http-foundation": "6.4.*",
+        "symfony/http-kernel": "6.4.*",
+        "symfony/intl": "6.4.*",
+        "symfony/mailer": "6.4.*",
+        "symfony/mime": "6.4.*",
+        "symfony/monolog-bundle": "^3.0",
+        "symfony/process": "6.4.*",
+        "symfony/property-access": "6.4.*",
+        "symfony/property-info": "6.4.*",
+        "symfony/runtime": "6.4.*",
+        "symfony/security-bundle": "6.4.*",
+        "symfony/security-csrf": "6.4.*",
+        "symfony/security-http": "6.4.*",
+        "symfony/serializer": "6.4.*",
+        "symfony/translation": "6.4.*",
+        "symfony/twig-bundle": "6.4.*",
+        "symfony/validator": "6.4.*",
+        "symfony/web-link": "6.4.*",
+        "symfony/yaml": "6.4.*",
+        "doctrine/doctrine-bundle": "^2.11",
+        "doctrine/doctrine-migrations-bundle": "^3.0",
+        "doctrine/orm": "^2.15"
+    },
+    "require-dev": {
+        "symfony/maker-bundle": "^1.54",
+        "symfony/phpunit-bridge": "^6.4"
+    },
+    "config": {
+        "allow-plugins": {
+            "symfony/flex": true,
+            "symfony/runtime": true
+        },
+        "optimize-autoloader": true,
+        "preferred-install": {
+            "*": "dist"
+        },
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\Tests\\": "tests/"
+        }
+    }
+}

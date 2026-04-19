@@ -1,0 +1,50 @@
+FROM php:8.2-apache
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libpq-dev \
+    zip \
+    unzip \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions needed by Symfony/Doctrine
+# Note: json, tokenizer, ctype are built-in in PHP 8.2
+RUN docker-php-ext-install pdo pdo_pgsql
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/symfony
+
+# Copy Composer files first for better caching
+COPY composer.json ./
+
+# Install PHP dependencies (no lock file yet, will be generated)
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-security-blocking
+
+# Copy Symfony application
+COPY src/ /var/www/symfony/src/
+COPY bin/ /var/www/symfony/bin/
+COPY config/ /var/www/symfony/config/
+COPY migrations/ /var/www/symfony/migrations/
+COPY .env ./
+
+# Create var directory and set permissions
+RUN mkdir -p var \
+    && chown -R www-data:www-data var \
+    && chmod -R 775 var
+
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite headers
+
+# Configure Apache
+COPY .docker/apache.conf /etc/apache2/sites-available/000-default.conf
+
+EXPOSE 8000
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public/"]

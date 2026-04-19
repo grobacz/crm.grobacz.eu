@@ -1,0 +1,42 @@
+# Dependencies
+/vendor/
+frontend/node_modules/
+
+# Build artifacts
+frontend/dist/
+frontend/build/
+
+# Symfony cache and logs
+/var/
+/app.php
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test and coverage
+coverage/
+.phpunit.result.cache
+
+# Redis
+dump.rdb

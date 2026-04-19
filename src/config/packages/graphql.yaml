@@ -1,0 +1,5 @@
+webonyx_graphql:
+    schema:
+        types: ~
+    graphiql: true
+    debug: '%kernel.debug%'

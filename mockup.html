@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Status Bar */
+        .top-bar {
+            background: #495057;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: 60px;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            background: white;
+            color: #667eea;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .breadcrumb span {
+            opacity: 0.7;
+        }
+
+        .breadcrumb::after {
+            content: '>';
+            margin-left: 8px;
+            opacity: 0.5;
+        }
+
+        .breadcrumb:last-child::after {
+            content: '';
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .notification {
+            position: relative;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .notification:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: white;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 25px;
+            width: 300px;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            outline: none;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .search-box input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .search-box svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.8;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* Collapsible Sidebar */
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            transition: width 0.3s ease;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .menu-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            padding: 10px 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.1);
+            border-left-color: #667eea;
+        }
+
+        .menu-item.active {
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+            color: #667eea;
+        }
+
+        .menu-icon {
+            width: 20px;
+            text-align: center;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+
+        .menu-text {
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+        }
+
+        .sidebar.collapsed .menu-item {
+            justify-content: center;
+            padding: 15px 0;
+        }
+
+        .sidebar.collapsed .menu-item .menu-icon {
+            margin-right: 0;
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            background: white;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            color: #2c3e50;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Dashboard Cards */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #e9ecef;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .bg-blue { background: rgba(102, 126, 234, 0.1); color: #667eea; }
+        .bg-green { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+        .bg-orange { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+        .bg-red { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .stat-change.positive {
+            color: #28a745;
+        }
+
+        .stat-change.negative {
+            color: #dc3545;
+        }
+
+        /* Recent Activity */
+        .activity-list {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .bg-purple { background: rgba(102, 126, 234, 0.1); color: #667eea; }
+        .bg-info { background: rgba(23, 162, 184, 0.1); color: #17a2b8; }
+        .bg-warning { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .search-box {
+                width: 200px;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Status Bar -->
+    <header class="top-bar">
+        <div class="logo">
+            <div class="logo-icon">CRM</div>
+            <span>CustomerHub Pro</span>
+        </div>
+        
+        <nav class="breadcrumb">
+            <span>Home</span>
+            <span>Customers</span>
+            <span>Active Customers</span>
+        </nav>
+        
+        <div class="status-info">
+            <div class="notification">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                </svg>
+                <span class="notification-badge">3</span>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar">AD</div>
+                <span>Admin User</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Box -->
+    <div style="padding: 15px 20px; background: #495057;">
+        <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" placeholder="Search customers, leads, products...">
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Collapsible Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">◀</button>
+            <div class="sidebar-menu">
+                <div class="menu-section">
+                    <div class="section-title">Overview</div>
+                    <div class="menu-item active">
+                        <span class="menu-icon">📊</span>
+                        <span class="menu-text">Dashboard</span>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="section-title">Customers</div>
+                    <div class="menu-item">
+                        <span class="menu-icon">👥</span>
+                        <span class="menu-text">All Customers</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">✅</span>
+                        <span class="menu-text">Active</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">❌</span>
+                        <span class="menu-text">Inactive</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">⭐</span>
+                        <span class="menu-text">VIP Customers</span>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="section-title">Leads</div>
+                    <div class="menu-item">
+                        <span class="menu-icon">🔍</span>
+                        <span class="menu-text">New Leads</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">✅</span>
+                        <span class="menu-text">Qualified</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">💰</span>
+                        <span class="menu-text">Converted</span>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="section-title">Products</div>
+                    <div class="menu-item">
+                        <span class="menu-icon">📦</span>
+                        <span class="menu-text">Inventory</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">📁</span>
+                        <span class="menu-text">Categories</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">💵</span>
+                        <span class="menu-text">Pricing</span>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="section-title">Campaigns</div>
+                    <div class="menu-item">
+                        <span class="menu-icon">📧</span>
+                        <span class="menu-text">Email Campaigns</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">📞</span>
+                        <span class="menu-text">Call Logs</span>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="section-title">Settings</div>
+                    <div class="menu-item">
+                        <span class="menu-icon">⚙️</span>
+                        <span class="menu-text">System Settings</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-icon">👥</span>
+                        <span class="menu-text">User Management</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-header">
+                <h1 class="page-title">Dashboard Overview</h1>
+                <div class="quick-actions">
+                    <button class="btn btn-outline">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        Add Customer
+                    </button>
+                    <button class="btn btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        New Campaign
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard Stats -->
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Total Customers</span>
+                        <div class="card-icon bg-blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-number">1,234</div>
+                    <div class="stat-change positive">↑ 12% from last month</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Active Leads</span>
+                        <div class="card-icon bg-green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                                <path d="M16 18l6-6-6-6"/>
+                                <path d="M8 6H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-number">567</div>
+                    <div class="stat-change positive">↑ 8% from last month</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Revenue</span>
+                        <div class="card-icon bg-orange">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                                <path d="M12 8v14"/>
+                                <path d="M18 8V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-number">$45,670</div>
+                    <div class="stat-change negative">↓ 3% from last month</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Conversion Rate</span>
+                        <div class="card-icon bg-red">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                                <polyline points="16 18 22 12 16 6"/>
+                                <polyline points="8 6 2 12 8 18"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-number">24.5%</div>
+                    <div class="stat-change positive">↑ 2% from last month</div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="activity-list">
+                <div class="card-header">
+                    <span class="card-title">Recent Activity</span>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon bg-purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">New customer <strong>Sarah Johnson</strong> added to VIP list</div>
+                        <div class="activity-time">2 minutes ago</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon bg-info">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="16 10 12 14 8 10"/>
+                        </svg>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">Email campaign sent to <strong>500+ customers</strong></div>
+                        <div class="activity-time">1 hour ago</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon bg-warning">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="4"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">Quarterly review meeting scheduled</div>
+                        <div class="activity-time">3 hours ago</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon bg-purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">New lead <strong>Michael Chen</strong> converted to customer</div>
+                        <div class="activity-time">5 hours ago</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.sidebar-toggle');
+            sidebar.classList.toggle('collapsed');
+            
+            // Update toggle button arrow
+            if (sidebar.classList.contains('collapsed')) {
+                toggleBtn.textContent = '▶';
+            } else {
+                toggleBtn.textContent = '◀';
+            }
+        }
+
+        // Add click handlers to menu items
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active class from siblings
+                const parent = this.parentNode;
+                parent.querySelectorAll('.menu-item').forEach(sibling => {
+                    sibling.classList.remove('active');
+                });
+                // Add active class to clicked item
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

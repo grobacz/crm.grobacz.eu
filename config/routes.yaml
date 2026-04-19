@@ -1,0 +1,4 @@
+graphql:
+    path: /graphql
+    controller: App\Controller\GraphQLController::__invoke
+    methods: [GET, POST]

@@ -1,0 +1,72 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: crm-db
+    environment:
+      POSTGRES_DB: crm_db
+      POSTGRES_USER: crm_user
+      POSTGRES_PASSWORD: crm_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - crm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm_user -d crm_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Symfony Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: crm-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+      DATABASE_URL: postgresql://crm_user:crm_password@db:5432/crm_db?serverVersion=15&charset=utf8
+    volumes:
+      - ./src:/var/www/symfony/src
+      - ./config:/var/www/symfony/config
+      - ./migrations:/var/www/symfony/migrations
+    ports:
+      - "8000:8000"
+    networks:
+      - crm-network
+    command: php -S 0.0.0.0:8000 -t public/
+
+  # Vue.js Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: crm-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://backend:8000/graphql
+      NODE_ENV: development
+    volumes:
+      - ./frontend/src:/var/www/frontend/src
+      - ./frontend/public:/var/www/frontend/public
+    ports:
+      - "3000:3000"
+    networks:
+      - crm-network
+    command: npm run serve
+
+networks:
+  crm-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
