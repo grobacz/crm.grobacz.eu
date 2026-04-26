@@ -57,6 +57,26 @@ services:
       - loc
     command: sh /usr/local/bin/worker-entrypoint.sh
 
+  reset-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: crm-reset-worker-prod
+    depends_on:
+      - db
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
+      DATABASE_URL: postgresql://crm_user:${DB_PASSWORD}@db:5432/crm_db?serverVersion=15&charset=utf8
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: crm_db
+      DB_USER: crm_user
+      DB_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - loc
+    command: sh /usr/local/bin/reset-db-worker.sh
+
   frontend:
     build:
       context: .

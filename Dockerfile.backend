@@ -37,13 +37,14 @@ COPY migrations/ /var/www/symfony/migrations/
 COPY init.sql /var/www/symfony/init.sql
 COPY .docker/backend-entrypoint.sh /usr/local/bin/backend-entrypoint.sh
 COPY .docker/worker-entrypoint.sh /usr/local/bin/worker-entrypoint.sh
+COPY .docker/reset-db-worker.sh /usr/local/bin/reset-db-worker.sh
 COPY .env ./
 
 # Create var directory and set permissions
 RUN mkdir -p var \
     && chown -R www-data:www-data var \
     && chmod -R 775 var \
-    && chmod +x /usr/local/bin/backend-entrypoint.sh /usr/local/bin/worker-entrypoint.sh
+    && chmod +x /usr/local/bin/backend-entrypoint.sh /usr/local/bin/worker-entrypoint.sh /usr/local/bin/reset-db-worker.sh
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite headers
