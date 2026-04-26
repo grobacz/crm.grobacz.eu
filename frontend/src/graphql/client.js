@@ -1,6 +1,6 @@
 import { GraphQLClient } from 'graphql-request'
 
-const GRAPHQL_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:8000/graphql'
+const GRAPHQL_ENDPOINT = import.meta.env.VITE_API_URL || '/graphql'
 
 export const graphqlClient = new GraphQLClient(GRAPHQL_ENDPOINT, {
   headers: {

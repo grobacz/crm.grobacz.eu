@@ -6,6 +6,8 @@ type Customer {
   email: String!
   phone: String
   company: String
+  status: String!
+  isVip: Boolean!
   contacts: [Contact!]!
   deals: [Deal!]!
 }
@@ -29,18 +31,248 @@ type Deal {
   customer: Customer!
 }
 
+type Lead {
+  id: ID!
+  name: String
+  email: String
+  phone: String
+  company: String
+  status: String!
+  createdAt: String
+  updatedAt: String
+}
+
+type Activity {
+  id: ID!
+  entityType: String!
+  action: String!
+  entityId: String
+  message: String!
+  createdAt: String!
+}
+
+type CallLog {
+  id: ID!
+  targetType: String!
+  targetId: String!
+  targetName: String!
+  targetPhone: String!
+  status: String!
+  startedAt: String!
+  endedAt: String
+  durationSeconds: Int
+  isActive: Boolean!
+}
+
+type EmailCampaignRecipient {
+  id: ID!
+  recipientType: String!
+  recipientId: String!
+  recipientName: String!
+  recipientEmail: String!
+  status: String!
+  createdAt: String!
+  updatedAt: String!
+  sentAt: String
+  openedAt: String
+  completedAt: String
+}
+
+type EmailCampaign {
+  id: ID!
+  name: String!
+  subject: String!
+  content: String!
+  targetType: String!
+  targetSegment: String!
+  status: String!
+  createdAt: String!
+  updatedAt: String!
+  startedAt: String
+  completedAt: String
+  recipientCount: Int!
+  newCount: Int!
+  sendingCount: Int!
+  openedCount: Int!
+  completedCount: Int!
+  progressPercent: Int!
+  recipients: [EmailCampaignRecipient!]!
+}
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  sortOrder: Int!
+  createdAt: String!
+  updatedAt: String!
+  parent: Category
+  children: [Category!]!
+  inventoryItems: [InventoryItem!]!
+}
+
+type InventoryItem {
+  id: ID!
+  sku: String!
+  name: String!
+  description: String
+  unit: String!
+  stockQuantity: Int!
+  reservedQuantity: Int!
+  availableQuantity: Int!
+  reorderLevel: Int!
+  cost: Float
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+  category: Category
+  pricingListItems: [PricingListItem!]!
+}
+
+type PricingList {
+  id: ID!
+  name: String!
+  code: String!
+  currency: String!
+  description: String
+  isDefault: Boolean!
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+  items: [PricingListItem!]!
+}
+
+type PricingListItem {
+  id: ID!
+  price: Float!
+  compareAtPrice: Float
+  createdAt: String!
+  updatedAt: String!
+  pricingList: PricingList
+  inventoryItem: InventoryItem
+}
+
+type AppSetting {
+  id: ID!
+  settingKey: String!
+  settingValue: String!
+  description: String
+  createdAt: String
+  updatedAt: String
+}
+
+type AppUser {
+  id: ID!
+  name: String!
+  email: String!
+  role: String!
+  status: String!
+  avatarColor: String
+  initials: String!
+  createdAt: String
+  updatedAt: String
+}
+
+type Notification {
+  id: ID!
+  userId: String!
+  activityId: String
+  isRead: Boolean!
+  createdAt: String!
+  activity: Activity
+}
+
+type SearchResultItem {
+  id: String!
+  type: String!
+  name: String!
+  email: String
+  subtitle: String
+}
+
+type SearchResults {
+  customers: [SearchResultItem!]!
+  leads: [SearchResultItem!]!
+  deals: [SearchResultItem!]!
+  inventoryItems: [SearchResultItem!]!
+  totalResults: Int!
+}
+
 type Query {
   hello(name: String): String
+  recentActivities(limit: Int): [Activity!]!
+  callLogs(limit: Int): [CallLog!]!
+  activeCall: CallLog
+  emailCampaigns(limit: Int): [EmailCampaign!]!
+  emailCampaign(id: ID!): EmailCampaign
   customers: [Customer!]!
+  customerCount: Int!
   customer(id: ID!): Customer
   contacts: [Contact!]!
+  contactCount: Int!
+  contact(id: ID!): Contact
   deals: [Deal!]!
+  dealCount: Int!
+  deal(id: ID!): Deal
+  leads: [Lead!]!
+  leadCount: Int!
+  lead(id: ID!): Lead
+  categories: [Category!]!
+  categoryCount: Int!
+  category(id: ID!): Category
+  inventoryItems: [InventoryItem!]!
+  inventoryItemCount: Int!
+  inventoryItem(id: ID!): InventoryItem
+  pricingLists: [PricingList!]!
+  pricingListCount: Int!
+  pricingList(id: ID!): PricingList
+  settings: [AppSetting!]!
+  setting(key: String!): AppSetting
+  users: [AppUser!]!
+  activeUsers: [AppUser!]!
+  user(id: ID!): AppUser
+  userCount: Int!
+  notifications(userId: String!, limit: Int): [Notification!]!
+  unreadNotificationCount(userId: String!): Int!
+  search(query: String!, limit: Int): SearchResults!
 }
 
 type Mutation {
-  createCustomer(name: String!, email: String!, phone: String, company: String): Customer!
-  updateCustomer(id: ID!, name: String, email: String, phone: String, company: String): Customer!
+  createCustomer(name: String!, email: String!, phone: String, company: String, status: String, isVip: Boolean): Customer!
+  updateCustomer(id: ID!, name: String, email: String, phone: String, company: String, status: String, isVip: Boolean): Customer!
   deleteCustomer(id: ID!): Boolean!
+  createContact(name: String!, email: String, phone: String, title: String, isPrimary: Boolean, customerId: ID!): Contact!
+  updateContact(id: ID!, name: String, email: String, phone: String, title: String, isPrimary: Boolean): Contact!
+  deleteContact(id: ID!): Boolean!
+  createDeal(title: String!, value: Float, status: String, closeDate: String, customerId: ID!): Deal!
+  updateDeal(id: ID!, title: String, value: Float, status: String, closeDate: String): Deal!
+  deleteDeal(id: ID!): Boolean!
+  createLead(name: String, email: String, phone: String, company: String, status: String): Lead!
+  updateLead(id: ID!, name: String, email: String, phone: String, company: String, status: String): Lead!
+  deleteLead(id: ID!): Boolean!
+  startCall(targetType: String!, targetId: String!): CallLog!
+  stopCall(id: ID!): CallLog!
+  createEmailCampaign(name: String!, subject: String!, content: String!, targetType: String!, targetSegment: String!): EmailCampaign!
+  createCategory(name: String!, slug: String!, description: String, sortOrder: Int, parentId: ID): Category!
+  updateCategory(id: ID!, name: String, slug: String, description: String, sortOrder: Int, parentId: ID): Category!
+  deleteCategory(id: ID!): Boolean!
+  createInventoryItem(sku: String!, name: String!, description: String, unit: String, stockQuantity: Int, reservedQuantity: Int, reorderLevel: Int, cost: Float, isActive: Boolean, categoryId: ID): InventoryItem!
+  updateInventoryItem(id: ID!, sku: String, name: String, description: String, unit: String, stockQuantity: Int, reservedQuantity: Int, reorderLevel: Int, cost: Float, isActive: Boolean, categoryId: ID): InventoryItem!
+  deleteInventoryItem(id: ID!): Boolean!
+  createPricingList(name: String!, code: String!, currency: String, description: String, isDefault: Boolean, isActive: Boolean): PricingList!
+  updatePricingList(id: ID!, name: String, code: String, currency: String, description: String, isDefault: Boolean, isActive: Boolean): PricingList!
+  deletePricingList(id: ID!): Boolean!
+  upsertPricingListItem(pricingListId: ID!, inventoryItemId: ID!, price: Float!, compareAtPrice: Float): PricingListItem!
+  deletePricingListItem(id: ID!): Boolean!
+  updateSetting(key: String!, value: String!, description: String): AppSetting!
+  updateSettings(settings: [SettingInput!]!): [AppSetting!]!
+  deleteSetting(key: String!): Boolean!
+  createUser(name: String!, email: String!, role: String, status: String, avatarColor: String): AppUser!
+  updateUser(id: ID!, name: String, email: String, role: String, status: String, avatarColor: String): AppUser!
+  deleteUser(id: ID!): Boolean!
+  markNotificationRead(id: String!): Boolean!
+  markAllNotificationsRead(userId: String!): Boolean!
 }
 
 type Subscription {
@@ -52,4 +284,10 @@ schema {
   query: Query
   mutation: Mutation
   subscription: Subscription
+}
+
+input SettingInput {
+  key: String!
+  value: String!
+  description: String
 }

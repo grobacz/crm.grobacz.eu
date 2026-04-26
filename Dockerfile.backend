@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libpq-dev \
+    postgresql-client \
     zip \
     unzip \
     git \
@@ -33,12 +34,16 @@ COPY src/ /var/www/symfony/src/
 COPY bin/ /var/www/symfony/bin/
 COPY config/ /var/www/symfony/config/
 COPY migrations/ /var/www/symfony/migrations/
+COPY init.sql /var/www/symfony/init.sql
+COPY .docker/backend-entrypoint.sh /usr/local/bin/backend-entrypoint.sh
+COPY .docker/worker-entrypoint.sh /usr/local/bin/worker-entrypoint.sh
 COPY .env ./
 
 # Create var directory and set permissions
 RUN mkdir -p var \
     && chown -R www-data:www-data var \
-    && chmod -R 775 var
+    && chmod -R 775 var \
+    && chmod +x /usr/local/bin/backend-entrypoint.sh /usr/local/bin/worker-entrypoint.sh
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite headers
@@ -47,4 +52,4 @@ RUN a2enmod rewrite headers
 COPY .docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 8000
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public/"]
+CMD ["backend-entrypoint.sh"]

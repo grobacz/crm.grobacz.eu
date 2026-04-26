@@ -33,15 +33,50 @@ services:
       APP_ENV: dev
       APP_DEBUG: 1
       DATABASE_URL: postgresql://crm_user:crm_password@db:5432/crm_db?serverVersion=15&charset=utf8
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: crm_db
+      DB_USER: crm_user
+      DB_PASSWORD: crm_password
     volumes:
       - ./src:/var/www/symfony/src
       - ./config:/var/www/symfony/config
       - ./migrations:/var/www/symfony/migrations
+      - ./init.sql:/var/www/symfony/init.sql:ro
+      - ./.docker/backend-entrypoint.sh:/usr/local/bin/backend-entrypoint.sh:ro
     ports:
       - "8000:8000"
     networks:
       - crm-network
-    command: php -S 0.0.0.0:8000 -t public/
+    command: backend-entrypoint.sh
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: crm-worker
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+      DATABASE_URL: postgresql://crm_user:crm_password@db:5432/crm_db?serverVersion=15&charset=utf8
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: crm_db
+      DB_USER: crm_user
+      DB_PASSWORD: crm_password
+      PROCESS_INTERVAL: 4
+    volumes:
+      - ./src:/var/www/symfony/src
+      - ./config:/var/www/symfony/config
+      - ./migrations:/var/www/symfony/migrations
+      - ./init.sql:/var/www/symfony/init.sql:ro
+      - ./.docker/worker-entrypoint.sh:/usr/local/bin/worker-entrypoint.sh:ro
+    networks:
+      - crm-network
+    command: sh /usr/local/bin/worker-entrypoint.sh
 
   # Vue.js Frontend
   frontend:
@@ -52,7 +87,8 @@ services:
     depends_on:
       - backend
     environment:
-      VITE_API_URL: http://backend:8000/graphql
+      VITE_API_URL: /graphql
+      VITE_PROXY_TARGET: http://backend:8000
       NODE_ENV: development
     volumes:
       - ./frontend/src:/var/www/frontend/src
