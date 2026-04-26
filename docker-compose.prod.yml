@@ -1,0 +1,79 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: crm-db-prod
+    environment:
+      POSTGRES_DB: crm_db
+      POSTGRES_USER: crm_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - crm_postgres_data:/var/lib/postgresql/data
+    networks:
+      - loc
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: crm-backend-prod
+    depends_on:
+      - db
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
+      DATABASE_URL: postgresql://crm_user:${DB_PASSWORD}@db:5432/crm_db?serverVersion=15&charset=utf8
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: crm_db
+      DB_USER: crm_user
+      DB_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - loc
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.crm-backend.rule=Host(`crm.grobacz.eu`) && PathPrefix(`/graphql`)"
+      - "traefik.http.routers.crm-backend.entrypoints=websecure"
+      - "traefik.http.routers.crm-backend.tls.certresolver=myresolver"
+      - "traefik.http.services.crm-backend.loadbalancer.server.port=8000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: crm-worker-prod
+    depends_on:
+      - db
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
+      DATABASE_URL: postgresql://crm_user:${DB_PASSWORD}@db:5432/crm_db?serverVersion=15&charset=utf8
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: crm_db
+      DB_USER: crm_user
+      DB_PASSWORD: ${DB_PASSWORD}
+      PROCESS_INTERVAL: 4
+    networks:
+      - loc
+    command: sh /usr/local/bin/worker-entrypoint.sh
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.prod
+    container_name: crm-frontend-prod
+    networks:
+      - loc
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.crm-frontend.rule=Host(`crm.grobacz.eu`)"
+      - "traefik.http.routers.crm-frontend.entrypoints=websecure"
+      - "traefik.http.routers.crm-frontend.tls.certresolver=myresolver"
+      - "traefik.http.services.crm-frontend.loadbalancer.server.port=80"
+
+networks:
+  loc:
+    external: true
+
+volumes:
+  crm_postgres_data:
