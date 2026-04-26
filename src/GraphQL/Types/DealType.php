@@ -48,6 +48,12 @@ class DealType extends ObjectType
                             return $closeDate ? $closeDate->format('Y-m-d') : null;
                         },
                     ],
+                    'createdAt' => [
+                        'type' => Type::string(),
+                        'resolve' => function ($deal) {
+                            return $deal->getCreatedAt()?->format('c');
+                        },
+                    ],
                     'customer' => [
                         'type' => Type::nonNull(function () {
                             return CustomerType::getInstance();

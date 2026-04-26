@@ -5,6 +5,7 @@ import Dashboard from '../views/Dashboard.vue'
 import Customers from '../views/Customers.vue'
 import Contacts from '../views/Contacts.vue'
 import Leads from '../views/Leads.vue'
+import Deals from '../views/Deals.vue'
 import Categories from '../views/Categories.vue'
 import Inventory from '../views/Inventory.vue'
 import PricingLists from '../views/PricingLists.vue'
@@ -19,6 +20,7 @@ const routes = [
   { path: '/customers', name: 'Customers', component: Customers, meta: { section: 'customers' } },
   { path: '/contacts', name: 'Contacts', component: Contacts, meta: { section: 'contacts' } },
   { path: '/leads', name: 'Leads', component: Leads, meta: { section: 'leads' } },
+  { path: '/deals', name: 'Deals', component: Deals, meta: { section: 'deals' } },
   { path: '/inventory', name: 'Inventory', component: Inventory, meta: { section: 'products' } },
   { path: '/categories', name: 'Categories', component: Categories, meta: { section: 'products' } },
   { path: '/pricing-lists', name: 'PricingLists', component: PricingLists, meta: { section: 'products' } },

@@ -1,7 +1,7 @@
 export const ROLE_ACCESS = {
-  admin: ['dashboard', 'customers', 'contacts', 'leads', 'products', 'campaigns', 'settings'],
-  manager: ['dashboard', 'customers', 'contacts', 'leads', 'products', 'campaigns'],
-  user: ['dashboard', 'customers', 'contacts', 'leads']
+  admin: ['dashboard', 'customers', 'contacts', 'leads', 'deals', 'products', 'campaigns', 'settings'],
+  manager: ['dashboard', 'customers', 'contacts', 'leads', 'deals', 'products', 'campaigns'],
+  user: ['dashboard', 'customers', 'contacts', 'leads', 'deals']
 }
 
 export function canAccessSection(role, section) {

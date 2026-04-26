@@ -6,6 +6,7 @@ use App\Entity\Lead;
 use App\GraphQL\Exception\ValidationException;
 use App\Repository\LeadRepository;
 use App\Service\ActivityLogger;
+use App\Service\InputValidator;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -139,26 +140,13 @@ class LeadResolver
 
     private function normalizeLeadInput(array $args): array
     {
-        $name = array_key_exists('name', $args) && $args['name'] !== null
-            ? trim((string) $args['name'])
-            : null;
-        $email = array_key_exists('email', $args) && $args['email'] !== null
-            ? trim((string) $args['email'])
-            : null;
-        $phone = array_key_exists('phone', $args) && $args['phone'] !== null
-            ? trim((string) $args['phone'])
-            : null;
-        $company = array_key_exists('company', $args) && $args['company'] !== null
-            ? trim((string) $args['company'])
-            : null;
-
         return [
-            'name' => $name === '' ? null : $name,
-            'email' => $email === null || $email === '' ? null : strtolower($email),
-            'phone' => $phone === '' ? null : $phone,
-            'company' => $company === '' ? null : $company,
+            'name' => InputValidator::trimString($args['name'] ?? null),
+            'email' => InputValidator::normalizeEmail($args['email'] ?? null),
+            'phone' => InputValidator::trimString($args['phone'] ?? null),
+            'company' => InputValidator::trimString($args['company'] ?? null),
             'status' => isset($args['status']) && $args['status'] !== null
-                ? strtolower(trim((string) $args['status']))
+                ? strtolower(InputValidator::trimString($args['status']) ?? '')
                 : 'new',
         ];
     }
@@ -167,8 +155,9 @@ class LeadResolver
     {
         $fieldErrors = [];
 
-        if ($input['name'] !== null && mb_strlen($input['name']) > 255) {
-            $fieldErrors['name'] = 'Lead name must be 255 characters or fewer.';
+        $nameError = InputValidator::validateName($input['name'], false);
+        if ($nameError !== null) {
+            $fieldErrors['name'] = 'Lead ' . lcfirst($nameError);
         }
 
         if ($input['email'] === null && $input['phone'] === null) {
@@ -177,29 +166,29 @@ class LeadResolver
         }
 
         if ($input['email'] !== null) {
-            if (mb_strlen($input['email']) > 255) {
-                $fieldErrors['email'] = 'Email must be 255 characters or fewer.';
-            } elseif (filter_var($input['email'], FILTER_VALIDATE_EMAIL) === false) {
-                $fieldErrors['email'] = 'Enter a valid email address.';
+            $emailError = InputValidator::validateEmail($input['email'], true);
+            if ($emailError !== null) {
+                $fieldErrors['email'] = $emailError;
             } elseif ($this->leadRepository->emailExistsForAnotherLead($input['email'], $existingLead?->getId())) {
                 $fieldErrors['email'] = 'This email is already used by another lead.';
             }
         }
 
         if ($input['phone'] !== null) {
-            if (mb_strlen($input['phone']) > 20) {
-                $fieldErrors['phone'] = 'Phone number must be 20 characters or fewer.';
-            } elseif (!preg_match('/^\+?[\d\s().-]{7,20}$/', $input['phone'])) {
-                $fieldErrors['phone'] = 'Use a valid phone format with digits, spaces, parentheses, dots, or dashes.';
+            $phoneError = InputValidator::validatePhone($input['phone'], false);
+            if ($phoneError !== null) {
+                $fieldErrors['phone'] = $phoneError;
             }
         }
 
-        if ($input['company'] !== null && mb_strlen($input['company']) > 255) {
-            $fieldErrors['company'] = 'Company name must be 255 characters or fewer.';
+        $companyError = InputValidator::validateCompany($input['company']);
+        if ($companyError !== null) {
+            $fieldErrors['company'] = $companyError;
         }
 
-        if (!in_array($input['status'], self::ALLOWED_STATUSES, true)) {
-            $fieldErrors['status'] = 'Lead status must be new, qualified, or converted.';
+        $statusError = InputValidator::validateStatus($input['status'], self::ALLOWED_STATUSES);
+        if ($statusError !== null) {
+            $fieldErrors['status'] = 'Lead ' . lcfirst($statusError);
         }
 
         if ($fieldErrors !== []) {

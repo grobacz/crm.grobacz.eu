@@ -3,22 +3,21 @@
 namespace App\GraphQL\Resolver;
 
 use App\Entity\Deal;
+use App\GraphQL\Exception\ValidationException;
 use App\Repository\DealRepository;
 use App\Service\ActivityLogger;
+use App\Service\InputValidator;
 use Doctrine\ORM\EntityManagerInterface;
 
 class DealResolver
 {
-    private DealRepository $dealRepository;
-    private EntityManagerInterface $entityManager;
+    private const ALLOWED_STATUSES = ['open', 'won', 'lost', 'pending'];
 
     public function __construct(
-        DealRepository $dealRepository,
-        EntityManagerInterface $entityManager,
+        private readonly DealRepository $dealRepository,
+        private readonly EntityManagerInterface $entityManager,
         private readonly ActivityLogger $activityLogger
     ) {
-        $this->dealRepository = $dealRepository;
-        $this->entityManager = $entityManager;
     }
 
     public function resolveDeals(): array
@@ -38,14 +37,11 @@ class DealResolver
 
     public function resolveCreateDeal(array $args): Deal
     {
-        $deal = new Deal();
-        $deal->setTitle($args['title']);
-        $deal->setValue($args['value'] ?? null);
-        $deal->setStatus($args['status'] ?? null);
+        $input = $this->normalizeDealInput($args);
+        $this->validateDealInput($input);
 
-        if (isset($args['closeDate'])) {
-            $deal->setCloseDate(new \DateTime($args['closeDate']));
-        }
+        $deal = new Deal();
+        $this->applyDealInput($deal, $input);
 
         $customer = $this->entityManager->getRepository(\App\Entity\Customer::class)->find($args['customerId']);
         if (!$customer) {
@@ -73,18 +69,15 @@ class DealResolver
             throw new \Exception('Deal not found');
         }
 
-        if (isset($args['title'])) {
-            $deal->setTitle($args['title']);
-        }
-        if (isset($args['value'])) {
-            $deal->setValue($args['value']);
-        }
-        if (isset($args['status'])) {
-            $deal->setStatus($args['status']);
-        }
-        if (isset($args['closeDate'])) {
-            $deal->setCloseDate(new \DateTime($args['closeDate']));
-        }
+        $input = $this->normalizeDealInput([
+            'title' => $args['title'] ?? $deal->getTitle(),
+            'value' => $args['value'] ?? $deal->getValue(),
+            'status' => $args['status'] ?? $deal->getStatus(),
+            'closeDate' => $args['closeDate'] ?? ($deal->getCloseDate()?->format('Y-m-d')),
+        ]);
+
+        $this->validateDealInput($input);
+        $this->applyDealInput($deal, $input);
 
         $this->entityManager->flush();
         $this->activityLogger->log(
@@ -118,5 +111,62 @@ class DealResolver
         );
 
         return true;
+    }
+
+    private function normalizeDealInput(array $args): array
+    {
+        $title = InputValidator::trimString($args['title'] ?? null) ?? '';
+        $status = InputValidator::trimString($args['status'] ?? null);
+
+        return [
+            'title' => $title,
+            'value' => isset($args['value']) && $args['value'] !== null ? (string) $args['value'] : null,
+            'status' => $status === '' ? null : $status,
+            'closeDate' => InputValidator::trimString($args['closeDate'] ?? null),
+        ];
+    }
+
+    private function validateDealInput(array $input): void
+    {
+        $fieldErrors = [];
+
+        $nameError = InputValidator::validateName($input['title'], true);
+        if ($nameError !== null) {
+            $fieldErrors['title'] = 'Deal ' . lcfirst($nameError);
+        }
+
+        if ($input['status'] !== null) {
+            $statusError = InputValidator::validateStatus($input['status'], self::ALLOWED_STATUSES);
+            if ($statusError !== null) {
+                $fieldErrors['status'] = 'Deal ' . lcfirst($statusError);
+            }
+        }
+
+        if ($input['closeDate'] !== null) {
+            $date = \DateTime::createFromFormat('Y-m-d', $input['closeDate']);
+            if ($date === false || $date->format('Y-m-d') !== $input['closeDate']) {
+                $fieldErrors['closeDate'] = 'Close date must be a valid date in YYYY-MM-DD format.';
+            }
+        }
+
+        if ($fieldErrors !== []) {
+            throw new ValidationException(
+                'Please correct the highlighted deal fields.',
+                $fieldErrors
+            );
+        }
+    }
+
+    private function applyDealInput(Deal $deal, array $input): void
+    {
+        $deal->setTitle($input['title']);
+        $deal->setValue($input['value']);
+        $deal->setStatus($input['status']);
+
+        if ($input['closeDate'] !== null) {
+            $deal->setCloseDate(new \DateTime($input['closeDate']));
+        } else {
+            $deal->setCloseDate(null);
+        }
     }
 }

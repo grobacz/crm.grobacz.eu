@@ -6,6 +6,7 @@ use App\Entity\Customer;
 use App\GraphQL\Exception\ValidationException;
 use App\Repository\CustomerRepository;
 use App\Service\ActivityLogger;
+use App\Service\InputValidator;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -148,22 +149,16 @@ class CustomerResolver
 
     private function normalizeCustomerInput(array $args): array
     {
-        $name = isset($args['name']) ? trim((string) $args['name']) : '';
-        $email = isset($args['email']) ? trim((string) $args['email']) : '';
-        $phone = array_key_exists('phone', $args) && $args['phone'] !== null
-            ? trim((string) $args['phone'])
-            : null;
-        $company = array_key_exists('company', $args) && $args['company'] !== null
-            ? trim((string) $args['company'])
-            : null;
+        $phone = InputValidator::trimString($args['phone'] ?? null);
+        $company = InputValidator::trimString($args['company'] ?? null);
 
         return [
-            'name' => $name,
-            'email' => $email,
-            'phone' => $phone === '' ? null : $phone,
-            'company' => $company === '' ? null : $company,
+            'name' => InputValidator::trimString($args['name'] ?? '') ?? '',
+            'email' => InputValidator::normalizeEmail($args['email'] ?? '') ?? '',
+            'phone' => $phone,
+            'company' => $company,
             'status' => isset($args['status']) && $args['status'] !== null
-                ? strtolower(trim((string) $args['status']))
+                ? strtolower(InputValidator::trimString($args['status']) ?? '')
                 : 'active',
             'isVip' => (bool) ($args['isVip'] ?? false),
         ];
@@ -173,36 +168,31 @@ class CustomerResolver
     {
         $fieldErrors = [];
 
-        if ($input['name'] === '') {
-            $fieldErrors['name'] = 'Customer name is required.';
-        } elseif (mb_strlen($input['name']) > 255) {
-            $fieldErrors['name'] = 'Customer name must be 255 characters or fewer.';
+        $nameError = InputValidator::validateName($input['name'], true);
+        if ($nameError !== null) {
+            $fieldErrors['name'] = 'Customer ' . lcfirst($nameError);
         }
 
-        if ($input['email'] === '') {
-            $fieldErrors['email'] = 'Email is required.';
-        } elseif (mb_strlen($input['email']) > 255) {
-            $fieldErrors['email'] = 'Email must be 255 characters or fewer.';
-        } elseif (filter_var($input['email'], FILTER_VALIDATE_EMAIL) === false) {
-            $fieldErrors['email'] = 'Enter a valid email address.';
+        $emailError = InputValidator::validateEmail($input['email'], true);
+        if ($emailError !== null) {
+            $fieldErrors['email'] = $emailError;
         } elseif ($this->customerRepository->emailExistsForAnotherCustomer($input['email'], $existingCustomer?->getId())) {
             $fieldErrors['email'] = 'This email is already used by another customer.';
         }
 
-        if ($input['phone'] !== null) {
-            if (mb_strlen($input['phone']) > 20) {
-                $fieldErrors['phone'] = 'Phone number must be 20 characters or fewer.';
-            } elseif (!preg_match('/^\+?[\d\s().-]{7,20}$/', $input['phone'])) {
-                $fieldErrors['phone'] = 'Use a valid phone format with digits, spaces, parentheses, dots, or dashes.';
-            }
+        $phoneError = InputValidator::validatePhone($input['phone'], false);
+        if ($phoneError !== null) {
+            $fieldErrors['phone'] = $phoneError;
         }
 
-        if ($input['company'] !== null && mb_strlen($input['company']) > 255) {
-            $fieldErrors['company'] = 'Company name must be 255 characters or fewer.';
+        $companyError = InputValidator::validateCompany($input['company']);
+        if ($companyError !== null) {
+            $fieldErrors['company'] = $companyError;
         }
 
-        if (!in_array($input['status'], self::ALLOWED_STATUSES, true)) {
-            $fieldErrors['status'] = 'Customer status must be active or inactive.';
+        $statusError = InputValidator::validateStatus($input['status'], self::ALLOWED_STATUSES);
+        if ($statusError !== null) {
+            $fieldErrors['status'] = 'Customer ' . lcfirst($statusError);
         }
 
         if ($fieldErrors !== []) {

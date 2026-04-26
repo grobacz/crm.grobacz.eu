@@ -31,8 +31,10 @@ An `architecture.md` file exists in the current repository state.
 │   ├── public/
 │   ├── src/
 │   │   ├── components/layout/
+│   │   ├── composables/
 │   │   ├── graphql/
 │   │   ├── router/
+│   │   ├── store/
 │   │   ├── views/
 │   │   ├── App.vue
 │   │   └── main.js
@@ -49,6 +51,7 @@ An `architecture.md` file exists in the current repository state.
 │   │   ├── Types/
 │   │   └── schema.graphql
 │   ├── Repository/
+│   ├── Service/
 │   └── Kernel.php
 ├── composer.json
 ├── docker-compose.yml
@@ -75,7 +78,7 @@ An `architecture.md` file exists in the current repository state.
 - Vue boots from `frontend/src/main.js`.
 - Routing is in `frontend/src/router/index.js`.
 - Shared layout components are in `frontend/src/components/layout/`.
-- Current views are `Dashboard.vue`, `Customers.vue`, `Contacts.vue`, `Leads.vue`, `Inventory.vue`, `Categories.vue`, `PricingLists.vue`, `CampaignCalls.vue`, and `CampaignEmail.vue`.
+- Current views are `Dashboard.vue`, `Customers.vue`, `Contacts.vue`, `Leads.vue`, `Deals.vue`, `Inventory.vue`, `Categories.vue`, `PricingLists.vue`, `CampaignCalls.vue`, and `CampaignEmail.vue`.
 - `Dashboard.vue` reads live counts plus `recentActivities` from GraphQL for the Recent Activity card.
 - The GraphQL client is `frontend/src/graphql/client.js`.
 - `frontend/src/graphql/schema.js` is a frontend-side schema helper, not the backend source of truth.
@@ -108,33 +111,26 @@ The backend currently models:
 
 GraphQL `QueryType` exposes reads for all product-building-block entities alongside CRM records, plus `callLogs` and `activeCall` for the campaigns call center flow and `emailCampaigns` / `emailCampaign` for outbound email progress tracking. `MutationType` exposes writes for `Customer`, `Contact`, `Deal`, `Lead`, `Category`, `InventoryItem`, `PricingList`, `PricingListItem`, call start/stop operations, and email campaign creation, and those mutations log `Activity` records for the dashboard feed.
 
-The frontend only has dedicated views/routes for:
+The frontend has dedicated views/routes for:
 
 - dashboard
 - customers
 - contacts
 - leads
+- deals
 - inventory
 - categories
 - pricing-lists
 - campaigns/email
 - campaigns/calls
 
-There is currently no `Deals.vue` view or deal route.
-
 ## Legacy Or Duplicate Paths
 
-These paths exist but are currently empty or non-authoritative:
+These paths are empty or non-authoritative and should not be used for active code:
 
-- `src/Views`
-- `src/assets`
-- `src/components`
-- `src/graphql`
-- `src/public`
-- `src/router`
 - `src/config/`
 
-Use the root `config/` directory for Symfony configuration unless you verify a file under `src/config/` is intentionally being revived. Do not assume the empty Vue-style directories under root `src/` are part of the active frontend.
+Use the root `config/` directory for Symfony configuration unless you verify a file under `src/config/` is intentionally being revived. Do not assume any Vue-style directories under root `src/` are part of the active frontend.
 
 ## Development Guidelines
 
@@ -154,7 +150,7 @@ Use the root `config/` directory for Symfony configuration unless you verify a f
 3. Put reusable layout or UI pieces in `frontend/src/components/`.
 4. Use `frontend/src/graphql/client.js` for API calls unless you are intentionally replacing the frontend GraphQL layer.
 5. Keep routing changes in `frontend/src/router/index.js`.
-6. Pinia is installed and initialized, but there are no committed stores yet. Add stores under `frontend/src/store/` only when shared state is actually needed.
+6. Pinia is installed and initialized. Shared state lives under `frontend/src/store/` (e.g., `callCenter.js`, `user.js`). Add new stores only when shared state is actually needed.
 
 ### Docker / Runtime
 

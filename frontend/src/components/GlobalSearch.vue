@@ -68,7 +68,7 @@
             v-for="item in results.deals"
             :key="item.id"
             class="result-item"
-            @click="navigateTo('/customers')"
+            @click="navigateTo('/deals')"
           >
             <div class="result-icon deal-icon">D</div>
             <div class="result-info">
@@ -171,8 +171,7 @@ function handleInput() {
     isSearching.value = true
     try {
       const data = await graphqlRequest(SEARCH_QUERY, {
-        query: searchQuery.value,
-        limit: 5
+        query: searchQuery.value
       })
       results.value = data.search || { customers: [], leads: [], deals: [], inventoryItems: [], totalResults: 0 }
     } catch (error) {

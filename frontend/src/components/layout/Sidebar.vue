@@ -63,6 +63,16 @@ const menuSections = [
     ]
   },
   {
+    title: 'Deals',
+    section: 'deals',
+    items: [
+      { label: 'All Deals', icon: '🤝', route: '/deals' },
+      { label: 'Open', icon: '📂', route: '/deals?status=open' },
+      { label: 'Won', icon: '🏆', route: '/deals?status=won' },
+      { label: 'Lost', icon: '🚫', route: '/deals?status=lost' }
+    ]
+  },
+  {
     title: 'Products',
     section: 'products',
     items: [

@@ -51,6 +51,12 @@ class ContactType extends ObjectType
                             return (bool) $contact->isPrimary();
                         },
                     ],
+                    'createdAt' => [
+                        'type' => Type::string(),
+                        'resolve' => function ($contact) {
+                            return $contact->getCreatedAt()?->format('c');
+                        },
+                    ],
                     'customer' => [
                         'type' => Type::nonNull(function () {
                             return CustomerType::getInstance();

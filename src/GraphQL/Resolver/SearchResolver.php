@@ -20,7 +20,7 @@ class SearchResolver
     public function resolveSearch(array $args): array
     {
         $query = trim($args['query'] ?? '');
-        $limit = $args['limit'] ?? 5;
+        $limit = $args['limit'] ?? 10;
 
         if ($query === '' || mb_strlen($query) < 2) {
             return [

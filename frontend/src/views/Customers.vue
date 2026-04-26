@@ -304,6 +304,7 @@ import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { graphqlRequest } from '../graphql/client'
 import { useCallCenterStore } from '../store/callCenter'
+import { useFormValidation, getGraphqlErrorMessage, getGraphqlFieldErrors, normalizeEmail } from '../composables/useFormValidation'
 
 const CUSTOMERS_QUERY = `
   query CustomersPage {
@@ -401,12 +402,6 @@ const statusUpdateError = ref('')
 const callActionError = ref('')
 const searchTerm = ref('')
 const statusUpdateState = reactive({})
-const formErrors = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  company: ''
-})
 
 const form = reactive({
   name: '',
@@ -501,133 +496,78 @@ function resetForm() {
   clearFormErrors()
 }
 
-function getGraphqlErrorMessage(error, fallbackMessage) {
-  return error?.response?.errors?.[0]?.message || fallbackMessage
-}
-
-function getGraphqlFieldErrors(error) {
-  return error?.response?.errors?.[0]?.extensions?.fieldErrors || {}
-}
-
 function getTargetKey(targetType, targetId) {
   return callCenterStore.getTargetKey(targetType, targetId)
 }
 
-function clearFormErrors() {
-  for (const field of FORM_FIELDS) {
-    formErrors[field] = ''
-  }
-}
-
-function setFieldError(field, message) {
-  formErrors[field] = message
-}
-
-function applyServerFieldErrors(errors) {
-  for (const field of FORM_FIELDS) {
-    setFieldError(field, errors[field] || '')
-  }
-}
-
-function normalizeEmail(value) {
-  return value.trim().toLowerCase()
-}
-
-function validateName() {
-  if (!form.name) {
-    return 'Customer name is required.'
-  }
-
-  if (form.name.length > 255) {
-    return 'Customer name must be 255 characters or fewer.'
-  }
-
-  return ''
-}
-
-function validateEmail() {
-  if (!form.email) {
-    return 'Email is required.'
-  }
-
-  if (form.email.length > 255) {
-    return 'Email must be 255 characters or fewer.'
-  }
-
-  if (!EMAIL_PATTERN.test(form.email)) {
-    return 'Enter a valid email address.'
-  }
-
-  const normalizedEmail = normalizeEmail(form.email)
-  const hasDuplicate = customers.value.some((customer) => {
-    return normalizeEmail(customer.email || '') === normalizedEmail
-  })
-
-  if (hasDuplicate) {
-    return 'This email is already used by another customer.'
-  }
-
-  return ''
-}
-
-function validatePhone() {
-  if (!form.phone) {
+const {
+  formErrors,
+  clearFormErrors,
+  validateField,
+  validateForm,
+  applyServerFieldErrors,
+  handleFieldInput: _handleFieldInput,
+  handleFieldBlur: _handleFieldBlur
+} = useFormValidation(FORM_FIELDS, {
+  name: () => {
+    if (!form.name) {
+      return 'Customer name is required.'
+    }
+    if (form.name.length > 255) {
+      return 'Customer name must be 255 characters or fewer.'
+    }
+    return ''
+  },
+  email: () => {
+    if (!form.email) {
+      return 'Email is required.'
+    }
+    if (form.email.length > 255) {
+      return 'Email must be 255 characters or fewer.'
+    }
+    if (!EMAIL_PATTERN.test(form.email)) {
+      return 'Enter a valid email address.'
+    }
+    const normalizedEmail = normalizeEmail(form.email)
+    const hasDuplicate = customers.value.some((customer) => {
+      return normalizeEmail(customer.email || '') === normalizedEmail
+    })
+    if (hasDuplicate) {
+      return 'This email is already used by another customer.'
+    }
+    return ''
+  },
+  phone: () => {
+    if (!form.phone) {
+      return ''
+    }
+    if (form.phone.length > 20) {
+      return 'Phone number must be 20 characters or fewer.'
+    }
+    if (!PHONE_PATTERN.test(form.phone)) {
+      return 'Use a valid phone format with digits, spaces, parentheses, dots, or dashes.'
+    }
+    return ''
+  },
+  company: () => {
+    if (!form.company) {
+      return ''
+    }
+    if (form.company.length > 255) {
+      return 'Company name must be 255 characters or fewer.'
+    }
     return ''
   }
-
-  if (form.phone.length > 20) {
-    return 'Phone number must be 20 characters or fewer.'
-  }
-
-  if (!PHONE_PATTERN.test(form.phone)) {
-    return 'Use a valid phone format with digits, spaces, parentheses, dots, or dashes.'
-  }
-
-  return ''
-}
-
-function validateCompany() {
-  if (!form.company) {
-    return ''
-  }
-
-  if (form.company.length > 255) {
-    return 'Company name must be 255 characters or fewer.'
-  }
-
-  return ''
-}
-
-function validateField(field) {
-  const validators = {
-    name: validateName,
-    email: validateEmail,
-    phone: validatePhone,
-    company: validateCompany
-  }
-
-  const validator = validators[field]
-  const message = validator ? validator() : ''
-  setFieldError(field, message)
-
-  return message === ''
-}
-
-function validateForm() {
-  return FORM_FIELDS.every((field) => validateField(field))
-}
+})
 
 function handleFieldInput(field) {
   submitError.value = ''
   submitSuccess.value = ''
-
-  if (formErrors[field]) {
-    validateField(field)
-  }
+  _handleFieldInput(field)
 }
 
 function handleFieldBlur(field) {
-  validateField(field)
+  _handleFieldBlur(field)
 }
 
 function setStatusFilter(status) {

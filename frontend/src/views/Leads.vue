@@ -309,6 +309,7 @@ import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { graphqlRequest } from '../graphql/client'
 import { useCallCenterStore } from '../store/callCenter'
+import { useFormValidation, getGraphqlErrorMessage, getGraphqlFieldErrors, normalizeEmail } from '../composables/useFormValidation'
 
 const LEADS_QUERY = `
   query LeadsPage {
@@ -429,13 +430,6 @@ const form = reactive({
   company: ''
 })
 
-const formErrors = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  company: ''
-})
-
 const isEditingLead = computed(() => editingLeadId.value !== null)
 
 const sortedLeads = computed(() => {
@@ -508,23 +502,78 @@ function normalizeLead(lead) {
   }
 }
 
-function getGraphqlErrorMessage(error, fallbackMessage) {
-  return error?.response?.errors?.[0]?.message || fallbackMessage
-}
-
-function getGraphqlFieldErrors(error) {
-  return error?.response?.errors?.[0]?.extensions?.fieldErrors || {}
-}
-
 function getTargetKey(targetType, targetId) {
   return callCenterStore.getTargetKey(targetType, targetId)
 }
 
-function clearFormErrors() {
-  for (const field of FORM_FIELDS) {
-    formErrors[field] = ''
+const {
+  formErrors,
+  clearFormErrors,
+  validateField,
+  validateForm,
+  applyServerFieldErrors,
+  handleFieldInput: _handleFieldInput,
+  handleFieldBlur: _handleFieldBlur
+} = useFormValidation(FORM_FIELDS, {
+  name: () => {
+    if (!form.name) {
+      return ''
+    }
+    if (form.name.length > 255) {
+      return 'Lead name must be 255 characters or fewer.'
+    }
+    return ''
+  },
+  email: () => {
+    if (!form.email) {
+      if (!form.phone) {
+        return 'Provide at least an email or a phone number.'
+      }
+      return ''
+    }
+    if (form.email.length > 255) {
+      return 'Email must be 255 characters or fewer.'
+    }
+    if (!EMAIL_PATTERN.test(form.email)) {
+      return 'Enter a valid email address.'
+    }
+    const normalizedEmail = normalizeEmail(form.email)
+    const hasDuplicate = leads.value.some((lead) => {
+      if (lead.id === editingLeadId.value) {
+        return false
+      }
+      return normalizeEmail(lead.email || '') === normalizedEmail
+    })
+    if (hasDuplicate) {
+      return 'This email is already used by another lead.'
+    }
+    return ''
+  },
+  phone: () => {
+    if (!form.phone) {
+      if (!form.email) {
+        return 'Provide at least an email or a phone number.'
+      }
+      return ''
+    }
+    if (form.phone.length > 20) {
+      return 'Phone number must be 20 characters or fewer.'
+    }
+    if (!PHONE_PATTERN.test(form.phone)) {
+      return 'Use a valid phone format with digits, spaces, parentheses, dots, or dashes.'
+    }
+    return ''
+  },
+  company: () => {
+    if (!form.company) {
+      return ''
+    }
+    if (form.company.length > 255) {
+      return 'Company name must be 255 characters or fewer.'
+    }
+    return ''
   }
-}
+})
 
 function resetForm() {
   form.name = ''
@@ -533,114 +582,6 @@ function resetForm() {
   form.company = ''
   editingLeadId.value = null
   clearFormErrors()
-}
-
-function applyServerFieldErrors(errors) {
-  for (const field of FORM_FIELDS) {
-    formErrors[field] = errors[field] || ''
-  }
-}
-
-function normalizeEmail(value) {
-  return value.trim().toLowerCase()
-}
-
-function validateName() {
-  if (!form.name) {
-    return ''
-  }
-
-  if (form.name.length > 255) {
-    return 'Lead name must be 255 characters or fewer.'
-  }
-
-  return ''
-}
-
-function validateEmail() {
-  if (!form.email) {
-    if (!form.phone) {
-      return 'Provide at least an email or a phone number.'
-    }
-
-    return ''
-  }
-
-  if (form.email.length > 255) {
-    return 'Email must be 255 characters or fewer.'
-  }
-
-  if (!EMAIL_PATTERN.test(form.email)) {
-    return 'Enter a valid email address.'
-  }
-
-  const normalizedEmail = normalizeEmail(form.email)
-  const hasDuplicate = leads.value.some((lead) => {
-    if (lead.id === editingLeadId.value) {
-      return false
-    }
-
-    return normalizeEmail(lead.email || '') === normalizedEmail
-  })
-
-  if (hasDuplicate) {
-    return 'This email is already used by another lead.'
-  }
-
-  return ''
-}
-
-function validatePhone() {
-  if (!form.phone) {
-    if (!form.email) {
-      return 'Provide at least an email or a phone number.'
-    }
-
-    return ''
-  }
-
-  if (form.phone.length > 20) {
-    return 'Phone number must be 20 characters or fewer.'
-  }
-
-  if (!PHONE_PATTERN.test(form.phone)) {
-    return 'Use a valid phone format with digits, spaces, parentheses, dots, or dashes.'
-  }
-
-  return ''
-}
-
-function validateCompany() {
-  if (!form.company) {
-    return ''
-  }
-
-  if (form.company.length > 255) {
-    return 'Company name must be 255 characters or fewer.'
-  }
-
-  return ''
-}
-
-function validateField(field) {
-  const validators = {
-    name: validateName,
-    email: validateEmail,
-    phone: validatePhone,
-    company: validateCompany
-  }
-
-  const validator = validators[field]
-  const message = validator ? validator() : ''
-  formErrors[field] = message
-
-  return message === ''
-}
-
-function validateForm() {
-  const results = FORM_FIELDS.map((field) => validateField(field))
-
-  return results.every(Boolean)
 }
 
 function handleFieldInput(field) {
@@ -653,9 +594,7 @@ function handleFieldInput(field) {
     return
   }
 
-  if (formErrors[field]) {
-    validateField(field)
-  }
+  _handleFieldInput(field)
 }
 
 function handleFieldBlur(field) {
@@ -665,7 +604,7 @@ function handleFieldBlur(field) {
     return
   }
 
-  validateField(field)
+  _handleFieldBlur(field)
 }
 
 function setStatusFilter(status) {

@@ -14,6 +14,13 @@ export const graphqlRequest = async (query, variables = {}) => {
     return data
   } catch (error) {
     console.error('GraphQL Error:', error)
+
+    if (!error.response) {
+      const networkError = new Error('Network error. Please check your connection and try again.')
+      networkError.response = { errors: [{ message: networkError.message }] }
+      throw networkError
+    }
+
     throw error
   }
 }
